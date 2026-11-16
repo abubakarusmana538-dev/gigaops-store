@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order
+  template:
+    metadata:
+      labels:
+        app: order
+    spec:
+      containers:
+        - name: order
+          image: gigaops/gigaops-order:v1
+          ports:
+            - containerPort: 5002
+          env:
+            - name: DB_HOST
+              valueFrom: {configMapKeyRef: {name: store-config, key: DB_HOST}}
+            - name: DB_NAME
+              valueFrom: {configMapKeyRef: {name: store-config, key: MYSQL_DATABASE}}
+            - name: DB_USER
+              valueFrom: {configMapKeyRef: {name: store-config, key: MYSQL_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: store-secret, key: DB_PASSWORD}}
+            - name: PRODUCT_URL
+              valueFrom: {configMapKeyRef: {name: store-config, key: PRODUCT_URL}}
+          startupProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 20

@@ -1,0 +1,17 @@
+images:
+  frontend: gigaops/gigaops-frontend:v3
+  product: gigaops/gigaops-product:v3
+  order: gigaops/gigaops-order:v3
+persistence:
+  enabled: true
+replicas:
+  frontend: 3
+  product: 3
+  order: 3
+  mysql: 1
+service:
+  frontend:
+    type: NodePort
+    port: 80
+    targetPort: 80
+    nodePort: 30082

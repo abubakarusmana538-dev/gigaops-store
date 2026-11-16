@@ -1,0 +1,14 @@
+# Requires an ingress controller (e.g. ingress-nginx). Replace the host.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: store-ingress, namespace: gigaops-store}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: store.example.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: frontend-service, port: {number: 80}}

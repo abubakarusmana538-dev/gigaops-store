@@ -1,0 +1,27 @@
+# Local development: docker compose up --build  ->  http://localhost:8080
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: RootPass123!
+      MYSQL_DATABASE: storedb
+      MYSQL_USER: storeuser
+      MYSQL_PASSWORD: StorePass123!
+    volumes: [mysql-data:/var/lib/mysql]
+  product-service:
+    build: ./services/product-service
+  order-service:
+    build: ./services/order-service
+    environment:
+      DB_HOST: mysql
+      DB_NAME: storedb
+      DB_USER: storeuser
+      DB_PASSWORD: StorePass123!
+      PRODUCT_URL: http://product-service:5001
+    depends_on: [mysql, product-service]
+  frontend:
+    build: ./services/frontend
+    ports: ["8080:80"]
+    depends_on: [product-service, order-service]
+volumes:
+  mysql-data:

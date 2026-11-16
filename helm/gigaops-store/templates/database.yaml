@@ -1,0 +1,73 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicas.mysql }}
+  {{- if .Values.persistence.enabled }}
+  strategy:
+    type: Recreate
+  {{- end }}
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: {{ .Values.images.mysql }}
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom: {secretKeyRef: {name: store-secret, key: MYSQL_ROOT_PASSWORD}}
+            - name: MYSQL_DATABASE
+              valueFrom: {configMapKeyRef: {name: store-config, key: MYSQL_DATABASE}}
+            - name: MYSQL_USER
+              valueFrom: {configMapKeyRef: {name: store-config, key: MYSQL_USER}}
+            - name: MYSQL_PASSWORD
+              valueFrom: {secretKeyRef: {name: store-secret, key: DB_PASSWORD}}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - port: {{ .Values.service.mysql.port }}
+      targetPort: 3306

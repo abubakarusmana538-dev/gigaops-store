@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: store-config
+  namespace: {{ .Release.Namespace }}
+data:
+  MYSQL_DATABASE: {{ .Values.database.name | quote }}
+  MYSQL_USER: {{ .Values.database.user | quote }}
+  DB_HOST: "mysql"
+  PRODUCT_URL: "http://product-service:{{ .Values.service.product.port }}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: store-secret
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: {{ .Values.database.rootPassword | quote }}
+  DB_PASSWORD: {{ .Values.database.password | quote }}

@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: gigaops-store
+spec:
+  selector:
+    app: order
+  ports:
+    - port: 5002
+      targetPort: 5002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order
+  namespace: gigaops-store
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order
+  template:
+    metadata:
+      labels:
+        app: order
+    spec:
+      containers:
+        - name: order
+          image: gigaops/gigaops-order:v1
+          ports:
+            - containerPort: 5002
+          envFrom:
+            - configMapRef: {name: store-config}
+          env:
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: store-secret, key: DB_PASSWORD}}
+          # Gives the app time to wait for MySQL before liveness kicks in
+          startupProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}

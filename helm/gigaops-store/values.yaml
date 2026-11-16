@@ -1,0 +1,38 @@
+# Namespace comes from `helm install -n <ns> --create-namespace`.
+images:
+  frontend: gigaops/gigaops-frontend:v1
+  product: gigaops/gigaops-product:v1
+  order: gigaops/gigaops-order:v1
+  mysql: mysql:8.4
+
+replicas:
+  frontend: 1
+  product: 1
+  order: 1
+  mysql: 1
+
+service:
+  frontend:
+    type: NodePort
+    port: 80
+    targetPort: 80
+    nodePort: 30080
+  product:
+    port: 5001
+  order:
+    port: 5002
+  mysql:
+    port: 3306
+
+# MySQL storage. Off by default (training mode: data is lost when the pod is recreated).
+persistence:
+  enabled: false
+  storageClass: ""
+  size: 5Gi
+
+# LAB DEFAULTS - override with `--set` / a private values file / external secrets.
+database:
+  name: storedb
+  user: storeuser
+  rootPassword: RootPass123!
+  password: StorePass123!

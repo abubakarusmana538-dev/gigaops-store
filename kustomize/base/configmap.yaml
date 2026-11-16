@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: store-config
+data:
+  MYSQL_DATABASE: storedb
+  MYSQL_USER: storeuser
+  DB_HOST: mysql
+  PRODUCT_URL: http://product-service:5001

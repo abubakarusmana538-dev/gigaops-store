@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Usman Abubakar | GigaOps Online Store</title>
+    <style>
+        body { font-family: Arial; background: #f4f6f9; margin: 40px; }
+        h1 { color: #174a8b; }
+        .product { background: white; padding: 15px; margin: 12px 0; border-radius: 8px; }
+        button { background: #174a8b; color: white; padding: 10px 18px; border: none; cursor: pointer; }
+        input { padding: 8px; width: 60px; }
+        .owner { background: #174a8b; color: white; margin: -40px -40px 30px; padding: 14px 40px; font-size: 18px; font-weight: bold; }
+        #result { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="owner">Usman Abubakar</div>
+<h1>GigaOps Online Store</h1>
+<p>Available Products</p>
+<div id="products">Loading products...</div>
+
+<h2>My Orders</h2>
+<button onclick="loadOrders()">View Orders</button>
+<div id="orders"></div>
+<div id="result"></div>
+
+<script>
+async function loadProducts() {
+    const response = await fetch('/api/products/products');
+    const products = await response.json();
+    const container = document.getElementById('products');
+    container.innerHTML = '';
+    products.forEach(product => {
+        container.innerHTML += `
+            <div class="product">
+                <h3>${product.name}</h3>
+                <p>Price: ₹${product.price}</p>
+                Quantity:
+                <input type="number" id="qty-${product.id}" value="1" min="1">
+                <button onclick="placeOrder(${product.id})">Place Order</button>
+            </div>`;
+    });
+}
+
+async function placeOrder(productId) {
+    const quantity = Number(document.getElementById('qty-' + productId).value);
+    const response = await fetch('/api/orders/orders', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({product_id: productId, quantity: quantity})
+    });
+    const result = await response.json();
+    document.getElementById('result').innerText =
+        response.ok ? JSON.stringify(result) : result.error;
+}
+
+async function loadOrders() {
+    const response = await fetch('/api/orders/orders');
+    const orders = await response.json();
+    document.getElementById('orders').innerHTML =
+        '<pre>' + JSON.stringify(orders, null, 2) + '</pre>';
+}
+
+loadProducts();
+</script>
+</body>
+</html>

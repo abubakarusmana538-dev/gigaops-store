@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicas.frontend }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.images.frontend }}
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.service.frontend.type }}
+  selector:
+    app: frontend
+  ports:
+    - port: {{ .Values.service.frontend.port }}
+      targetPort: {{ .Values.service.frontend.targetPort }}
+      {{- if eq .Values.service.frontend.type "NodePort" }}
+      nodePort: {{ .Values.service.frontend.nodePort }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicas.product }}
+  selector:
+    matchLabels:
+      app: product
+  template:
+    metadata:
+      labels:
+        app: product
+    spec:
+      containers:
+        - name: product
+          image: {{ .Values.images.product }}
+          ports:
+            - containerPort: 5001
+          readinessProbe:
+            httpGet: {path: /health, port: 5001}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 5001}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: product
+  ports:
+    - port: {{ .Values.service.product.port }}
+      targetPort: 5001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicas.order }}
+  selector:
+    matchLabels:
+      app: order
+  template:
+    metadata:
+      labels:
+        app: order
+    spec:
+      containers:
+        - name: order
+          image: {{ .Values.images.order }}
+          ports:
+            - containerPort: 5002
+          env:
+            - name: DB_HOST
+              valueFrom: {configMapKeyRef: {name: store-config, key: DB_HOST}}
+            - name: DB_NAME
+              valueFrom: {configMapKeyRef: {name: store-config, key: MYSQL_DATABASE}}
+            - name: DB_USER
+              valueFrom: {configMapKeyRef: {name: store-config, key: MYSQL_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: store-secret, key: DB_PASSWORD}}
+            - name: PRODUCT_URL
+              valueFrom: {configMapKeyRef: {name: store-config, key: PRODUCT_URL}}
+          startupProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 5002}
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: order
+  ports:
+    - port: {{ .Values.service.order.port }}
+      targetPort: 5002

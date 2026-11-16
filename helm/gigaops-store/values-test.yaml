@@ -1,0 +1,15 @@
+images:
+  frontend: gigaops/gigaops-frontend:v2
+  product: gigaops/gigaops-product:v2
+  order: gigaops/gigaops-order:v2
+replicas:
+  frontend: 2
+  product: 2
+  order: 2
+  mysql: 1
+service:
+  frontend:
+    type: NodePort
+    port: 80
+    targetPort: 80
+    nodePort: 30081
